@@ -3,6 +3,7 @@ FROM python:slim-buster
 WORKDIR /var/watcher
 
 CMD mkdir files
+CMD chmod 777 ./files
 
 COPY requirements.txt requirements.txt
 
