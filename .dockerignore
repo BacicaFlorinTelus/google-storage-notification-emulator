@@ -1,0 +1,4 @@
+.idea
+.git
+**/build
+push_to_hub.sh
