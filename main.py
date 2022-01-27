@@ -32,7 +32,7 @@ class Watcher:
 
 class Handler(FileSystemEventHandler):
     def on_any_event(self, event):
-        print("Event type: {} \n Event path {}".format(event.event_type, event.src_path))
+        print("Event type: {} Event path {}".format(event.event_type, event.src_path))
         if event.is_directory:
             return None
         elif event.event_type == "created":
@@ -42,6 +42,7 @@ class Handler(FileSystemEventHandler):
                 topic_path, data, bucketId="", objectId=event.src_path
             )
             print("Event successfully sent to pubsub!")
+        print("")
 
 
 if __name__ == '__main__':
