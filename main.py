@@ -32,10 +32,10 @@ class Watcher:
 
 class Handler(FileSystemEventHandler):
     def on_any_event(self, event):
+        print("Event type: {} \n Event path {}".format(event.event_type, event.src_path))
         if event.is_directory:
             return None
-        elif event.event_type == 'created':
-            print("File created - %s." % event.src_path)
+        elif event.event_type == "created":
             data_str = f"Empty payload"
             data = data_str.encode("utf-8")
             publisher.publish(
