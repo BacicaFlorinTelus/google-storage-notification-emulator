@@ -3,8 +3,6 @@ import time
 import os
 
 from google.cloud import pubsub_v1
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
 topic_id = os.getenv("TOPIC_ID")
 publisher = pubsub_v1.PublisherClient()
@@ -14,35 +12,37 @@ topic_path = publisher.topic_path(os.getenv("PUBSUB_PROJECT_ID"), topic_id)
 class Watcher:
     DIRECTORY_TO_WATCH = "/var/watcher/files".format(tempfile.gettempdir())
 
-    def __init__(self):
-        self.observer = Observer()
-
     def run(self):
-        event_handler = Handler()
-        self.observer.schedule(event_handler, self.DIRECTORY_TO_WATCH, recursive=True)
-        self.observer.start()
+        event_handler = Handler(self.DIRECTORY_TO_WATCH)
         try:
             while True:
-                time.sleep(2)
+                time.sleep(0.5)
+                event_handler.search_for_new_files()
         except Exception as e:
-            self.observer.stop()
             print("Error")
-        self.observer.join()
 
 
-class Handler(FileSystemEventHandler):
-    def on_any_event(self, event):
-        print("Event type: {} Event path {}".format(event.event_type, event.src_path))
-        if event.is_directory:
-            return None
-        elif event.event_type == "created":
-            data_str = f"Empty payload"
-            data = data_str.encode("utf-8")
-            publisher.publish(
-                topic_path, data, bucketId="", objectId=event.src_path
-            )
-            print("Event successfully sent to pubsub!")
-        print("")
+class Handler:
+    def __init__(self, directory):
+        self.files = list()
+        self.directory = directory
+
+    def __get_files_from_directory(self):
+        return os.listdir(self.directory)
+
+    def search_for_new_files(self):
+        new_files = self.__get_files_from_directory()
+        for file in new_files:
+            if file in self.files:
+                print("New file created {}, an event will be send to pubsub!".format(file))
+                object_id = self.directory + "/" + file
+                data_str = f"Empty payload"
+                data = data_str.encode("utf-8")
+                publisher.publish(
+                    topic_path, data, bucketId="", objectId=object_id
+                )
+                print("Event successfully sent to pubsub!\n")
+        self.files = new_files
 
 
 if __name__ == '__main__':

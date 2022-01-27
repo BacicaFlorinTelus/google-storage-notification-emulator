@@ -1,2 +1,1 @@
-watchdog==2.1.6
 google-cloud-pubsub==2.9.0
