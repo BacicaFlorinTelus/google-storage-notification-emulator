@@ -3,6 +3,7 @@ import time
 import os
 
 from google.cloud import pubsub_v1
+from google.api_core.exceptions import GoogleAPIError
 
 topic_id = os.getenv("TOPIC_ID")
 publisher = pubsub_v1.PublisherClient()
@@ -19,16 +20,24 @@ class Watcher:
                 time.sleep(0.5)
                 event_handler.search_for_new_files()
         except Exception as e:
-            print("Error")
+            print("Error {}".format(e))
 
 
 class Handler:
     def __init__(self, directory):
         self.files = list()
         self.directory = directory
+        self.__clean_up_directory()
 
     def __get_files_from_directory(self):
         return os.listdir(self.directory)
+
+    def __clean_up_directory(self):
+        for file in self.__get_files_from_directory():
+            file_path = self.directory + "/" + file
+            if os.path.exists(file_path):
+                print("Cleaned file {}".format(file_path))
+                os.remove(file_path)
 
     def search_for_new_files(self):
         new_files = self.__get_files_from_directory()
@@ -38,10 +47,13 @@ class Handler:
                 object_id = self.directory + "/" + file
                 data_str = f"Empty payload"
                 data = data_str.encode("utf-8")
-                publisher.publish(
-                    topic_path, data, bucketId="", objectId=object_id
-                )
-                print("Event successfully sent to pubsub!\n")
+                try:
+                    publisher.publish(
+                        topic_path, data, bucketId="", objectId=object_id
+                    )
+                    print("Event successfully sent to pubsub!\n")
+                except GoogleAPIError as e:
+                    print("Error calling pubsub {}".format(e))
         self.files = new_files
 
 
